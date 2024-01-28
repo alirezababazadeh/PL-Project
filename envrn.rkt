@@ -84,3 +84,34 @@
       )
     )
   )
+
+(define add-env-gb-vars
+  (lambda (ls-gb-vars env)
+    (if (null? ls-gb-vars)
+        env
+        (add-env-gb-vars (cdr ls-gb-vars) (extend-env env (car ls-gb-vars) (apply-env globe (car ls-gb-vars))))
+        )
+    )
+  )
+
+(define add-to-ls-gb-vars
+  (lambda (sc var)
+    (cases scope sc
+      (gb-sc () sc)
+      (lc-sc (ls-gb-vars env)
+             (lc-sc (cons var ls-gb-vars) env)
+             )
+      )
+    )
+  )
+
+(define cp-of-sc
+  (lambda (sc)
+    (cases scope sc
+      (gb-sc () (lc-sc '() globe))
+      (lc-sc (ls-gb-vars env)
+             (lc-sc '() (append (add-env-gb-vars ls-gb-vars env) env))
+             )
+      )
+    )
+  )
