@@ -3,9 +3,9 @@
 (require (lib "eopl.ss" "eopl"))
 (require "parse.rkt")
 
-(define run
-  (lambda (string)
-    (value-of-program (evaluate string))
+(define evaluate
+  (lambda (input-string)
+    (value-of-program (scan&parse input-string))
     )
   )
 
@@ -17,12 +17,14 @@
     )
   )
 
+; Program → Statements EOF
 (define-datatype program program?
   (a-program
    (stats statements?)
    )
   )
 
+; Statements → Statement ';' | Statements Statement ';'
 (define-datatype statements statements?
   (a-statement
    (stat statement?))
@@ -31,6 +33,7 @@
    (stat statement?))
   )
 
+; Statement → Compound_stmt | Simple_stmt
 (define-datatype statement statement?
   (a-compound-stmt
    (cmp-stmt compound-stmt?))
@@ -38,13 +41,16 @@
    (sim-stmt simple-stmt?))
   )
 
+; Simple_stmt → Assignment | Global_stmt | Return_stmt
+; Simple_stmt → 'pass' | 'break' | 'continue'
+; Simple_stmt → 'print' '()' | 'print' '('Arguments')'
 (define-datatype simple-stmt simple-stmt?
-  (assign
-   (a assignment?))
+  (assign-stmt
+   (assign assign-stmt?))
   (glob-stmt
-   (a global-stmt?))
+   (glob global-stmt?))
   (ret-stmt
-   (a return-stmt?))
+   (ret return-stmt?))
   (pass-stmt)
   (break-stmt)
   (continue-stmt)
@@ -53,12 +59,13 @@
    (args arguments?))
   )
 
+; Compound_stmt → Function_def | If_stmt | For_stmt
 (define-datatype compound-stmt compound-stmt?
   (a-function-def
-   (a function-def?))
+   (func-def function-def?))
   (a-if-stmt
-   (a if-stmt?))
+   (if-stmt if-stmt?))
   (a-for-stmt
-   (a for-stmt?))
+   (for-stmt for-stmt?))
   )
 
