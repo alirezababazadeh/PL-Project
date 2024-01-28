@@ -209,3 +209,42 @@
       )
     )
   )
+
+; For_stmt
+(define-datatype evaluated-list evaluated-list?
+  (a-evaluated-list
+   (python-list python-list?)
+   (sc scope?)))
+
+(define value-of-for-stmt
+  (lambda (fs scope)
+    (cases for-stmt fs
+      (a-for-stmt 
+       (iter expr stats)
+       (let ((resp (value-of-expression expr sc)))
+         (cases evaluated-list (ans-val resp)
+           (a-evaluated-list 
+            (python-list sc)
+            (value-of-for-body iter python-list sc sts (extract-sc resp))
+            )
+           )
+         )
+       )
+      )
+    )
+  )
+
+(define value-of-for-body
+  (lambda (iter lst stored-sc stats sc)
+    (if (null? lst)
+       (a-ans (a-none) '- sc)
+       (let* ((resp1 (value-of-expression (car lst) stored-sc))
+              (resp2 (value-of-stats stats (extend-sc sc iter (ans-val resp1)))))
+         (if (break-ans? resp2)
+            (a-ans (a-none) '- (extract-sc resp2))
+            (value-of-for-body iter (cdr lst) stored-sc stats (extract-sc resp2))
+            )
+         )
+       )
+    )
+  )
