@@ -51,3 +51,36 @@
                  )
     )
   )
+
+(define apply-sc
+  (lambda (sc var)
+    (cases scope sc
+      (gb-sc () (apply-env globe var))
+      (lc-sc (ls-gb-vars env)
+             (cond
+               ((member var ls-gb-vars) (apply-env globe var))
+               ((assoc var env) (apply-env env var))
+               (else (eopl:error 'apply-sc "bounded value not found for ~s" var))
+               )
+             )
+      )
+    )
+  )
+
+(define extend-sc
+  (lambda (sc var val)
+    (cases scope sc
+      (gb-sc () (begin
+                  (set! globe (extend-env globe var val))
+                  sc))
+      (lc-sc (ls-gb-vars env)
+             (cond
+               ((member var ls-gb-vars) (begin
+                                          (set! globe (extend-env globe var val))
+                                          sc))
+               (else (lc-sc ls-gb-vars (extend-env env var val)))
+               )
+             )
+      )
+    )
+  )
