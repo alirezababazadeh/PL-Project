@@ -2,7 +2,8 @@
 
 (require (lib "eopl.ss" "eopl"))
 (require "parse.rkt"
-         "grammar.rkt")
+         "grammar.rkt"
+         "envrn.rkt")
 
 (define evaluate
   (lambda (input-string)
@@ -80,7 +81,9 @@
     (cases statement stat
       (a-compound-stmt (cmp-stat) (value-of-compound-stmt cmp-stat sc))
       (a-simple-stmt (sim-stmt) (value-of-simple-stmt sim-stmt sc))
-      )))
+      )
+    )
+  )
 
 ; Simple-stmt
 (define value-of-simple-stmt
@@ -93,7 +96,8 @@
       (beak-stmt () (a-ans (a-none) 'break sc))
       (continue-stmt () (a-ans (a-none) 'continue sc))
       )
-    ))
+    )
+  )
 
 ; Assignment-stmt
 (define value-of-assignment
@@ -125,3 +129,40 @@
     )
   )
 
+; Compound-stmt
+(define value-of-compound-stmt
+  (lambda (stat sc)
+    (cases compound-stmt stat
+      (cmp-function-def (func-def) (value-of-func-def func-def sc))
+      (cmp-if-stmt (if-stmt) (value-of-if-stmt func-def sc))
+      (cmp-for-stmt (for-stmt) (value-of-for-stmt func-def sc))
+      )
+    )
+  )
+
+; Function_def
+(define-datatype func func?
+  (a-func
+   (identifier symbol?)
+   (params (lambda (p) (or (none? p) (params? p))))
+   (stats statements?)
+   (sc scope?)))
+
+(define value-of-func-def
+  (lambda (func-def sc)
+    (cases cmp-function-def func-def
+      (func-def-with-params
+       (identifier params stats)
+       (let ((f (a-func identifier params stats (lc-sc-new scope))))
+         (a-ans (a-none) '- (extend-sc sc identifier f))
+         )
+       )
+      (func-def-no-params 
+       (identifier stats)
+       (let ((f (a-func identifier (a-none) sts (lc-sc-new scope))))
+         (a-ans (a-none) '- (extend-sc sc identifier f))
+         )
+       )
+      )
+    )
+  )
