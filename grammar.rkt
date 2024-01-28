@@ -305,6 +305,10 @@
    )
   )
 
+(define-datatype none none?
+  (none-stmt)
+  )
+
 ; Atom → ID | 'True' | 'False' | 'None' | NUMBER | List
 (define-datatype atom atom?
   (a-id
