@@ -31,3 +31,23 @@
     (cons (cons var val) env)
     )
   )
+
+(define-datatype scope scope?
+  (gb-sc)
+  (lc-sc
+   (ls-gb-vars (list-of symbol?))
+   (env envrn?)
+   )
+  )
+
+(define gb-sc-new 
+  (lambda () (gb-sc))
+  )
+
+(define lc-sc-new 
+  (lambda (sc) (cases scope sc
+                 (gb-sc () (lc-sc (list) (empty-env)))
+                 (lc-sc (gvl env) (lc-sc (list) env))
+                 )
+    )
+  )
