@@ -2,6 +2,8 @@
 
 (require (lib "eopl.ss" "eopl"))
 
+(provide (all-defined-out))
+
 ; Program → Statements EOF
 (define-datatype program program?
   (a-program

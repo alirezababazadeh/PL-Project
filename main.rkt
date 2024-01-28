@@ -5,10 +5,25 @@
          "grammar.rkt"
          "envrn.rkt")
 
+(provide (all-defined-out))
+
 (define evaluate
   (lambda (input-string)
     (value-of-program (scan&parse input-string))
     )
+  )
+
+(define-datatype expval expval?
+  (num-val
+   (num number?))
+  (bool-val
+   (bool boolean?))
+  (none-val
+   (n none?)
+   )
+  (func-val
+   (f func?)
+   )
   )
 
 (define-datatype answer answer?
@@ -17,8 +32,7 @@
    (msg symbol?)
    (sc scope?)))
 
-
-(define answer-val
+(define ans-val
   (lambda (ans)
     (cases answer ans
       (a-ans (val msg sc) val))))
@@ -53,7 +67,7 @@
   (lambda (pgm)
     (cases program pgm
       (a-program (stats)
-                 (value-of-stats stats (new-global-scope))))
+                 (value-of-stats stats (gb-sc-new))))
     )
   )
 
@@ -65,7 +79,7 @@
                    (value-of-stmt stat sc)
                    )
       (cum-statements (stats stat)
-                      (let ((answer-stats (value-of-statements stats sc)))
+                     (let ((answer-stats (value-of-stats stats sc)))
                         (if (not (or (ret-ans? answer-stats) (break-ans? answer-stats) (continue-ans? answer-stats)))
                             (value-of-stmt stat (extract-sc answer-stats))
                             answer-stats)
@@ -93,8 +107,10 @@
       (glob-stmt (glob) (value-of-global-stmt glob sc))
       (ret-stmt (ret) (value-of-return ret sc))
       (pass-stmt () (a-ans (a-none) '- sc))
-      (beak-stmt () (a-ans (a-none) 'break sc))
+      (break-stmt () (a-ans (a-none) 'break sc))
       (continue-stmt () (a-ans (a-none) 'continue sc))
+      (simple-print-stmt () (display ""))
+      (print-stmt (args) (value-of-print-stmt args))
       )
     )
   )
@@ -134,8 +150,8 @@
   (lambda (stat sc)
     (cases compound-stmt stat
       (cmp-function-def (func-def) (value-of-func-def func-def sc))
-      (cmp-if-stmt (if-stmt) (value-of-if-stmt func-def sc))
-      (cmp-for-stmt (for-stmt) (value-of-for-stmt func-def sc))
+      (cmp-if-stmt (if-stmt) (value-of-if-stmt if-stmt sc))
+      (cmp-for-stmt (for-stmt) (value-of-for-stmt for-stmt sc))
       )
     )
   )
@@ -163,6 +179,33 @@
          (a-ans (a-none) '- (extend-sc sc identifier f))
          )
        )
+      )
+    )
+  )
+
+; If_stmt
+(define value-of-if-stmt
+  (lambda (if-stmt sc)
+    (cases if-stmt if-s
+      (a-if-stmt
+       (cond-expr if-stats else-block)
+       (let ((resp (value-of-expression cond-expr sc)))
+         (if (ans-val resp)
+            (value-of-stats stats (extract-sc resp))
+            (value-of-else-block else-block (extract-sc resp))
+            )
+         )
+       )
+      )
+    )
+  )
+
+(define value-of-else-block
+  (lambda (eb scope)
+    (cases else-block eb
+      (a-else-block 
+       (else-stats)
+       (value-of-stats else-stats sc))
       )
     )
   )
