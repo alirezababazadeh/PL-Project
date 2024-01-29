@@ -486,3 +486,44 @@
         scope
         (let ((ans (value-of-param-with-default (car params) scope)))
           (add-params-to-scope (cdr params) (answer-scope ans))))))
+
+
+
+(define-datatype function function?
+  (a-function
+   (ID symbol?)
+   (params (lambda (p) (or (null? p) (params? p))))
+   (statements statements?)
+   (scope scope?)))
+
+(define add-args-to-scope
+  (lambda (arg-list params scope thunk-scope)
+    (if (null? arg-list)
+        scope
+        (cases param-with-default (car params)
+          (a-param-with-default (ID-lhs exp)
+                                (let ((ID (value-of-assignment-lhs ID-lhs scope)))
+                                 (add-args-to-scope
+                                    (cdr arg-list)
+                                    (cdr params)
+                                    (extend-scope scope ID (a-thunk (car arg-list) thunk-scope))
+                                    thunk-scope)))))))
+                                
+
+(define value-of-assignment-lhs
+  (lambda (ID-lhs scope)
+    (cases assignment-lhs ID-lhs
+      (assign-without-type (ID) ID)
+      (assign-with-type (ID ty) ID))))
+
+(define exp->assignment-lhs
+  (lambda (ID-lhs scope)
+    (cases assignment-lhs ID-lhs
+      (assign-without-type (ID) (list ID "dummy"))
+      (assign-with-type (ID ty) (list ID ty))))
+
+
+  (define-datatype eval-list eval-list?
+    (an-eval-list
+     (py-list py-list?)
+     (scope scope?))))
