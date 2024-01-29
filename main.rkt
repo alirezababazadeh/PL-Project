@@ -425,3 +425,10 @@
                               (a-ans (ans-val (apply-function (ans-val ans) args (extract-sc ans))) '- (extract-sc ans))))))))
 
 
+(define value-of-thunk
+  (lambda (ex)
+    (cases thunk ex
+      (a-thunk (exp sc)
+               (ans-val (value-of-expression exp sc))))))
+
+               
