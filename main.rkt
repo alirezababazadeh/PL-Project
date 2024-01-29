@@ -326,3 +326,102 @@
                   (a-cmp-answer (< (ans-val ans1) (ans-val ans2)) (extract-sc ans2)))))))
 
 
+(define value-of-gt-sum
+  (lambda (ex scope)
+    (cases gt-sum ex
+      (a-gt-sum (sum1 sum2)
+                (let ((ans1 (value-of-sum sum1 scope))
+                      (ans2 (value-of-sum sum2 scope)))
+                  (a-cmp-answer (> (ans-val ans1) (ans-val ans2)) (extract-sc ans2)))))))
+
+
+
+(define value-of-sum
+  (lambda (ex scope)
+    (cases sum ex
+      (plus-sum (sum term)
+               (let ((ans1 (value-of-sum sum scope)))
+                 (let ((ans2 (value-of-term term (extract-sc ans1))))
+                   (let ((exp1 (ans-val ans1))
+                         (exp2 (ans-val ans2))
+                         (scope (extract-sc ans2)))
+                     (cond
+                       ((eval-list? exp1)
+                        (cases eval-list exp1
+                          (an-eval-list (py-list1 sc1)
+                                        (cases eval-list exp2
+                                          (an-eval-list (py-list2 sc2)
+                                                        (a-ans (an-eval-list (append py-list1 py-list2) scope) '- scope))))))
+                       (else (a-ans (+ exp1 exp2) '- scope)))))))
+      (minus-sum (sum term)
+               (let ((ans1 (value-of-sum sum scope)))
+                 (let ((ans2 (value-of-term term (extract-sc ans1))))
+                   (let ((exp1 (ans-val ans1))
+                         (exp2 (ans-val ans2))
+                         (scope (extract-sc ans2)))
+                     (a-ans (- exp1 exp2) '- scope)))))
+      (term-sum (term)
+                (value-of-term term scope)))))
+
+
+(define value-of-term
+  (lambda (ex scope)
+    (cases term ex
+      (mult-term (term factor)
+               (let ((ans1 (value-of-term term scope)))
+                 (let ((exp1 (ans-val ans1))
+                       (scope (extract-sc ans1)
+                        (if (zero? exp1)
+                           (a-ans 0 '- scope)
+                           (let ((ans2 (value-of-factor factor scope)))
+                             (a-ans (* exp1 (ans-val ans2)) '- (extract-sc ans2)))))))))
+      (div-term (term factor)
+               (let ((ans1 (value-of-term term scope)))
+                 (let ((ans2 (value-of-factor factor (extract-sc ans1))))
+                   (a-ans (real->double-flonum (/ (ans-val ans1) (ans-val ans2))) '- (extract-sc ans2)))))
+      (factor-term (factor)
+                   (value-of-factor factor scope)))))
+
+(define value-of-factor
+  (lambda (ex scope)
+    (cases factor ex
+      (pos-factor (pow)
+                  (let ((ans (value-of-power pow scope)))
+                    (a-ans (ans-val ans) '- (extract-sc ans))))
+      (neg-factor (pow)
+                  (let ((ans (value-of-power pow scope)))
+                    (a-ans (- (ans-val ans)) '- (extract-sc ans))))
+      (power-factor (pow)
+                    (value-of-power pow scope)))))
+
+
+(define value-of-power
+  (lambda (ex scope)
+    (cases power ex
+      (atom-powered (atom factor)
+             (let ((ans1 (value-of-atom atom scope)))
+               (let ((ans2 (value-of-factor factor (extract-sc ans1))))
+                 (a-ans (expt (ans-val ans1) (ans-val ans2)) '- (extract-sc ans2)))))
+      (a-primary (primary)
+                 (value-of-primary primary scope)))))
+
+
+(define value-of-primary
+  (lambda (ex scope)
+    (cases primary ex
+      (a-atom (atom)
+              (value-of-atom atom scope))
+      (arr-access (primary expr)
+                  (let ((ans1 (value-of-primary primary scope)))
+                    (let ((ans2 (value-of-expression exp (extract-sc ans1))))
+                      (cases eval-list (ans-val ans1)
+                        (an-eval-list (py-list sc)
+                                      (a-ans (ans-val (value-of-expression (list-ref py-list (ans-val ans2)) sc)) '- scope))))))
+      (func-call-no-arg (primary)
+                        (let ((ans (value-of-primary primary scope)))
+                          (a-ans (ans-val (apply-function (ans-val ans) '() (extract-sc ans))) '- (extract-sc ans))))
+      (func-call-with-args (primary arguments
+                            (let ((ans (value-of-primary primary scope)))
+                              (a-ans (ans-val (apply-function (ans-val ans) args (extract-sc ans))) '- (extract-sc ans))))))))
+
+
