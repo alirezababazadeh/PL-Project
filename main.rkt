@@ -439,3 +439,20 @@
                             (let ((exp-val (ans-val (value-of-expression exp scope)))
                                   (ID (value-of-assignment-lhs ID-lhs scope)))
                               (a-ans exp-val '- (extend-scope scope ID exp-val)))))))
+
+(define value-of-print
+  (lambda (ex scope)
+    (cases print ex
+      (print-exp (items
+                   (letrec ((eval-and-print-atoms (lambda (items scope res-list)
+                                                    (if (null? items)
+                                                        (begin
+                                                          (cond
+                                                           ((and (list? res-list) (null? (cdr res-list))) (displayln (car res-list)))
+                                                           (else (displayln res-list)))
+                                                          (a-ans (a-none) '- scope))
+                                                        (let ((ans (value-of-atom (car items) scope)))
+                                                          (eval-and-print-atoms (cdr items) (extract-sc ans) (append res-list (list (atom->printable (ans-val ans))))))))))
+                     (eval-and-print-atoms items scope (list))))))))
+
+
