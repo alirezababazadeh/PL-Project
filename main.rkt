@@ -456,3 +456,33 @@
                      (eval-and-print-atoms items scope (list))))))))
 
 
+(define atom->printable
+  (lambda (at)
+    (cond
+      ((eval-list? at
+        (cases eval-list at
+          (an-eval-list (py-list sc)
+                        (map (lambda (a) (atom->printable
+                                          (ans-val (value-of-expression a sc)))) py-list)))))
+      ((boolean? at)
+       (if at 'True 'False))
+      ((none? at) 'None)
+      ((and (list? at) (null? (cdr at))) (car at))
+      (else at))))
+
+(define apply-function
+  (lambda (func arg-list outer-scope)
+    (cases function func
+      (a-function (ID params statements scope)
+                  (let ((scope (extend-scope scope ID func)))
+                    (let ((scope (add-params-to-scope params scope)))
+                      (let ((thunk-scope (copy-of-scope outer-scope)))
+                        (let ((scope (add-args-to-scope arg-list params scope thunk-scope)))
+                          (value-of-statements statements scope)))))))))
+
+(define add-params-to-scope
+  (lambda (params scope)
+    (if (null? params)
+        scope
+        (let ((ans (value-of-param-with-default (car params) scope)))
+          (add-params-to-scope (cdr params) (answer-scope ans))))))
