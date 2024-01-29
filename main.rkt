@@ -431,4 +431,11 @@
       (a-thunk (exp sc)
                (ans-val (value-of-expression exp sc))))))
 
-               
+
+(define value-of-param-with-default
+  (lambda (ex scope)
+    (cases param-with-default ex
+      (a-param-with-default (ID-lhs exp)
+                            (let ((exp-val (ans-val (value-of-expression exp scope)))
+                                  (ID (value-of-assignment-lhs ID-lhs scope)))
+                              (a-ans exp-val '- (extend-scope scope ID exp-val)))))))
