@@ -110,7 +110,7 @@
       (break-stmt () (a-ans (a-none) 'break sc))
       (continue-stmt () (a-ans (a-none) 'continue sc))
       (simple-print-stmt () (display ""))
-      (print-stmt (args) (value-of-print args)))))
+      (a-print-stmt (pstmt) (value-of-print pstmt sc)))))
       
     
   
@@ -441,18 +441,18 @@
 
 (define value-of-print
   (lambda (ex scope)
-    (cases print ex
-      (print-exp (items
-                   (letrec ((eval-and-print-atoms (lambda (items scope res-list)
-                                                    (if (null? items)
-                                                        (begin
-                                                          (cond
-                                                           ((and (list? res-list) (null? (cdr res-list))) (displayln (car res-list)))
-                                                           (else (displayln res-list)))
-                                                          (a-ans (a-none) '- scope))
-                                                        (let ((ans (value-of-atom (car items) scope)))
-                                                          (eval-and-print-atoms (cdr items) (extract-sc ans) (append res-list (list (atom->printable (ans-val ans))))))))))
-                     (eval-and-print-atoms items scope (list))))))))
+    (cases print-stmt ex
+      (a-print  (args)
+                (letrec ((eval-and-print-atoms (lambda (items scope res-list)
+                                                 (if (null? items)
+                                                     (begin
+                                                       (cond
+                                                        ((and (list? res-list) (null? (cdr res-list))) (displayln (car res-list)))
+                                                        (else (displayln res-list)))
+                                                       (a-ans (a-none) '- scope))
+                                                     (let ((ans (value-of-atom (car items) scope)))
+                                                       (eval-and-print-atoms (cdr items) (extract-sc ans) (append res-list (list (atom->printable (ans-val ans))))))))))
+                  (eval-and-print-atoms args scope (list)))))))
 
 
 (define atom->printable
@@ -473,18 +473,18 @@
   (lambda (func arg-list outer-scope)
     (cases function func
       (a-function (ID params statements scope)
-                  (let ((scope (extend-scope scope ID func)))
+                  (let ((scope (extend-sc scope ID func)))
                     (let ((scope (add-params-to-scope params scope)))
                       (let ((thunk-scope (cp-of-sc outer-scope)))
                         (let ((scope (add-args-to-scope arg-list params scope thunk-scope)))
-                          (value-of-statements statements scope)))))))))
+                          (value-of-stats statements scope)))))))))
 
 (define add-params-to-scope
   (lambda (params scope)
     (if (null? params)
         scope
         (let ((ans (value-of-param-with-default (car params) scope)))
-          (add-params-to-scope (cdr params) (answer-scope ans))))))
+          (add-params-to-scope (cdr params) (extract-sc ans))))))
 
 
 
@@ -499,42 +499,28 @@
   (lambda (arg-list params scope thunk-scope)
     (if (null? arg-list)
         scope
-        (cases param-with-default (car params)
-          (a-param-with-default (ID-lhs exp)
-                                (let ((ID (value-of-assignment-lhs ID-lhs scope)))
-                                 (add-args-to-scope
-                                    (cdr arg-list)
-                                    (cdr params)
-                                    (extend-scope scope ID (a-thunk (car arg-list) thunk-scope))
-                                    thunk-scope)))))))
+        (cases param (car params)
+          (with_default (ID exp)
+                        (add-args-to-scope
+                           (cdr arg-list)
+                           (cdr params)
+                           (extend-sc scope ID (a-thunk (car arg-list) thunk-scope))
+                           thunk-scope))))))
                                 
-
-(define value-of-assignment-lhs
-  (lambda (ID-lhs scope)
-    (cases assignment-lhs ID-lhs
-      (assign-without-type (ID) ID)
-      (assign-with-type (ID ty) ID))))
-
-(define exp->assignment-lhs
-  (lambda (ID-lhs scope)
-    (cases assignment-lhs ID-lhs
-      (assign-without-type (ID) (list ID "dummy"))
-      (assign-with-type (ID ty) (list ID ty)))))
-
 
 (define-datatype eval-list eval-list?
   (an-eval-list
-   (py-list py-list?)
+   (py-list python-list?)
    (scope scope?)))
 
 (define value-of-atom
   (lambda (atom scope)
     (cond
       ((symbol? atom)
-       (let ((scope-val (apply-scope scope atom)))
+       (let ((scope-val (apply-sc scope atom)))
          (if (thunk? scope-val)
              (let ((exp-val (value-of-thunk scope-val)))
-               (a-ans exp-val '- (extend-scope scope atom exp-val)))
+               (a-ans exp-val '- (extend-sc scope atom exp-val)))
              (a-ans scope-val '- scope)))
-       ((py-list? atom) (a-ans (an-eval-list atom (copy-of-scope scope)) '- scope))
+       ((python-list? atom) (a-ans (an-eval-list atom (cp-of-sc scope)) '- scope))
        (#t (a-ans atom '- scope))))))

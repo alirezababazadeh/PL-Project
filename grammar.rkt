@@ -49,10 +49,12 @@
   (break-stmt)
   (continue-stmt)
   (simple-print-stmt)
-  (print-stmt
-   (args arguments?)))
+  (a-print-stmt
+   (pstmt print-stmt?)))
    
-  
+(define-datatype print-stmt print-stmt?
+ (a-print 
+  (args arguments?)))
 
 ; Compound_stmt → Function_def | If_stmt | For_stmt
 (define-datatype compound-stmt compound-stmt?
