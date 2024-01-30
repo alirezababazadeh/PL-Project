@@ -110,7 +110,7 @@
       (break-stmt () (a-ans (a-none) 'break sc))
       (continue-stmt () (a-ans (a-none) 'continue sc))
       (simple-print-stmt () (display ""))
-      (print-stmt (args) (value-of-print-stmt args)))))
+      (print-stmt (args) (value-of-print args)))))
       
     
   
@@ -119,7 +119,7 @@
 (define value-of-assignment
   (lambda (stat sc)
     (cases assignment-stmt stat
-      (a-assign-stmt (identifier expr) (a-ans (a-none) '- (extend-sc sc identifier (a-thunk expr (copy-of-sc sc))))))))
+      (a-assign-stmt (identifier expr) (a-ans (a-none) '- (extend-sc sc identifier (a-thunk expr (cp-of-sc sc))))))))
       
     
   
@@ -140,7 +140,7 @@
 (define value-of-global-stmt
   (lambda (stat sc)
     (cases global-stmt stat
-      (a-global-stmt (identifier) (a-ans (a-none) '- (add-global-var sc identifier))))))
+      (a-global-stmt (identifier) (a-ans (a-none) '- (add-to-ls-gb-vars sc identifier))))))
       
     
   
@@ -166,16 +166,16 @@
 
 (define value-of-func-def
   (lambda (func-def sc)
-    (cases cmp-function-def func-def
+    (cases function-def func-def
       (func-def-with-params
        (identifier params stats)
-       (let ((f (a-func identifier params stats (lc-sc-new scope))))
+       (let ((f (a-func identifier params stats (lc-sc-new sc))))
          (a-ans (a-none) '- (extend-sc sc identifier f))))
          
        
       (func-def-no-params 
        (identifier stats)
-       (let ((f (a-func identifier (a-none) sts (lc-sc-new scope))))
+       (let ((f (a-func identifier (a-none) stats (lc-sc-new sc))))
          (a-ans (a-none) '- (extend-sc sc identifier f)))))))
          
        
@@ -185,13 +185,13 @@
 
 ; If_stmt
 (define value-of-if-stmt
-  (lambda (if-stmt sc)
-    (cases if-stmt if-s
+  (lambda (ex sc)
+    (cases if-stmt ex
       (a-if-stmt
        (cond-expr if-stats else-block)
        (let ((resp (value-of-expression cond-expr sc)))
          (if (ans-val resp)
-            (value-of-stats stats (extract-sc resp))
+            (value-of-stats if-stats (extract-sc resp))
             (value-of-else-block else-block (extract-sc resp))))))))
             
          
@@ -202,8 +202,8 @@
 
 ; else block
 (define value-of-else-block
-  (lambda (eb scope)
-    (cases else-block eb
+  (lambda (ex sc)
+    (cases else-block ex
       (a-else-block 
        (else-stats)
        (value-of-stats else-stats sc)))))
@@ -219,7 +219,7 @@
 
 ; for stmt
 (define value-of-for-stmt
-  (lambda (fs scope)
+  (lambda (fs sc)
     (cases for-stmt fs
       (a-for-stmt 
        (iter expr stats)
@@ -227,7 +227,7 @@
          (cases evaluated-list (ans-val resp)
            (a-evaluated-list 
             (python-list sc)
-            (value-of-for-body iter python-list sc sts (extract-sc resp)))))))))
+            (value-of-for-body iter python-list sc stats (extract-sc resp)))))))))
             
            
          
@@ -253,18 +253,18 @@
 
 (define value-of-expression
  (lambda (exp scope)
-  (cases expression? exp
+  (cases expression exp
    (disjunct-expression (disjunc) (value-of-disjunction disjunc scope)))))
 
 
 
 (define value-of-disjunction
- (lambda (disj scope))
- (cases disjunction disj
-  (a-disjunction (conjunc) (value-of-conjunction conjunc scope))
-  (cum-disjunction (disjunc conjunc) (let ((ans1 (value-of-disjunction disjunc scope)))
-                                      (let ((ans2 (value-of-conjunction conjunc (extract-sc ans1))))
-                                       (a-ans (or (ans-val ans1) (ans-val ans2)) '- (extract-sc ans2)))))))
+ (lambda (disj scope)
+  (cases disjunction disj
+    (a-disjunction (conjunc) (value-of-conjunction conjunc scope))
+    (cum-disjunction (disjunc conjunc) (let ((ans1 (value-of-disjunction disjunc scope)))
+                                        (let ((ans2 (value-of-conjunction conjunc (extract-sc ans1))))
+                                         (a-ans (or (ans-val ans1) (ans-val ans2)) '- (extract-sc ans2))))))))
 
 
 (define value-of-conjunction
@@ -293,19 +293,19 @@
 (define value-of-comparison
  (lambda (ex scope)
   (cases comparison ex
-    (sum-comp (sum) (value-of-sum sum scope))
-    (eq-comp (eq-sum
-                (let ((cmp-ans (value-of-eq-sum eq-sum scope)))
-                  (cases cmp-answer cmp-ans
-                    (a-cmp-answer (res sc) (a-ans res '- sc))))))
-    (lt-comp (lt-sum
-              (let ((cmp-ans (value-of-lt-sum lt-sum scope)))
-                (cases cmp-answer cmp-ans
-                  (a-cmp-answer (res sc) (a-ans res '- sc))))))
-    (gt-comp (gt-sum
-              (let ((cmp-ans (value-of-gt-sum gt-sum scope)))
-                (cases cmp-answer cmp-ans
-                  (a-cmp-answer (res sc) (a-ans res '- sc)))))))))
+    (eq-comp (eq-sum)
+             (let ((cmp-ans (value-of-eq-sum eq-sum scope)))
+               (cases cmp-answer cmp-ans
+                 (a-cmp-answer (res sc) (a-ans res '- sc)))))
+    (lt-comp (lt-sum)
+             (let ((cmp-ans (value-of-lt-sum lt-sum scope)))
+               (cases cmp-answer cmp-ans
+                 (a-cmp-answer (res sc) (a-ans res '- sc)))))
+    (gt-comp (gt-sum)
+             (let ((cmp-ans (value-of-gt-sum gt-sum scope)))
+               (cases cmp-answer cmp-ans
+                 (a-cmp-answer (res sc) (a-ans res '- sc)))))
+    (sum-comp (sum) (value-of-sum sum scope)))))
 
 
 (define value-of-eq-sum
@@ -370,11 +370,11 @@
       (mult-term (term factor)
                (let ((ans1 (value-of-term term scope)))
                  (let ((exp1 (ans-val ans1))
-                       (scope (extract-sc ans1)
-                        (if (zero? exp1)
-                           (a-ans 0 '- scope)
-                           (let ((ans2 (value-of-factor factor scope)))
-                             (a-ans (* exp1 (ans-val ans2)) '- (extract-sc ans2)))))))))
+                       (scope (extract-sc ans1)))
+                      (if (zero? exp1)
+                        (a-ans 0 '- scope)
+                        (let ((ans2 (value-of-factor factor scope)))
+                          (a-ans (* exp1 (ans-val ans2)) '- (extract-sc ans2)))))))
       (div-term (term factor)
                (let ((ans1 (value-of-term term scope)))
                  (let ((ans2 (value-of-factor factor (extract-sc ans1))))
@@ -420,9 +420,9 @@
       (func-call-no-arg (primary)
                         (let ((ans (value-of-primary primary scope)))
                           (a-ans (ans-val (apply-function (ans-val ans) '() (extract-sc ans))) '- (extract-sc ans))))
-      (func-call-with-args (primary arguments
-                            (let ((ans (value-of-primary primary scope)))
-                              (a-ans (ans-val (apply-function (ans-val ans) args (extract-sc ans))) '- (extract-sc ans))))))))
+      (func-call-with-args (primary arguments)
+                           (let ((ans (value-of-primary primary scope)))
+                             (a-ans (ans-val (apply-function (ans-val ans) arguments (extract-sc ans))) '- (extract-sc ans)))))))
 
 
 (define value-of-thunk
@@ -434,11 +434,10 @@
 
 (define value-of-param-with-default
   (lambda (ex scope)
-    (cases param-with-default ex
-      (a-param-with-default (ID-lhs exp)
-                            (let ((exp-val (ans-val (value-of-expression exp scope)))
-                                  (ID (value-of-assignment-lhs ID-lhs scope)))
-                              (a-ans exp-val '- (extend-scope scope ID exp-val)))))))
+    (cases param ex
+      (with_default (identifier expr)
+                    (let ((exp-val (ans-val (value-of-expression expr scope))))
+                      (a-ans exp-val '- (extend-sc scope identifier exp-val)))))))
 
 (define value-of-print
   (lambda (ex scope)
@@ -476,7 +475,7 @@
       (a-function (ID params statements scope)
                   (let ((scope (extend-scope scope ID func)))
                     (let ((scope (add-params-to-scope params scope)))
-                      (let ((thunk-scope (copy-of-scope outer-scope)))
+                      (let ((thunk-scope (cp-of-sc outer-scope)))
                         (let ((scope (add-args-to-scope arg-list params scope thunk-scope)))
                           (value-of-statements statements scope)))))))))
 
@@ -520,10 +519,22 @@
   (lambda (ID-lhs scope)
     (cases assignment-lhs ID-lhs
       (assign-without-type (ID) (list ID "dummy"))
-      (assign-with-type (ID ty) (list ID ty))))
+      (assign-with-type (ID ty) (list ID ty)))))
 
 
-  (define-datatype eval-list eval-list?
-    (an-eval-list
-     (py-list py-list?)
-     (scope scope?))))
+(define-datatype eval-list eval-list?
+  (an-eval-list
+   (py-list py-list?)
+   (scope scope?)))
+
+(define value-of-atom
+  (lambda (atom scope)
+    (cond
+      ((symbol? atom)
+       (let ((scope-val (apply-scope scope atom)))
+         (if (thunk? scope-val)
+             (let ((exp-val (value-of-thunk scope-val)))
+               (a-ans exp-val '- (extend-scope scope atom exp-val)))
+             (a-ans scope-val '- scope)))
+       ((py-list? atom) (a-ans (an-eval-list atom (copy-of-scope scope)) '- scope))
+       (#t (a-ans atom '- scope))))))
