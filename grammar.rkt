@@ -323,8 +323,7 @@
   (a-bool
    (bool boolean?))
    
-  (a-none
-   (none none?))
+  (a-none)
    
   (a-num
    (num number?))

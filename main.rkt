@@ -2,6 +2,7 @@
 
 (require (lib "eopl.ss" "eopl"))
 (require "parse.rkt"
+         "base.rkt"
          "grammar.rkt"
          "envrn.rkt")
 
@@ -9,59 +10,9 @@
 
 (define evaluate
   (lambda (input-string)
-    (value-of-program (a-program (scan&parse input-string)))))
+    (value-of-program (scan&parse input-string))))
     
   
-
-(define-datatype expval expval?
-  (num-val
-   (num number?))
-  (bool-val
-   (bool boolean?))
-  (none-val
-   (n none?))
-   
-  (func-val
-   (f func?)))
-   
-  
-
-(define-datatype answer answer?
-  (a-ans
-   (value expval?)
-   (msg symbol?)
-   (sc scope?)))
-
-(define ans-val
-  (lambda (ans)
-    (cases answer ans
-      (a-ans (val msg sc) val))))
-
-(define extract-sc
-  (lambda (ans)
-    (cases answer ans
-      (a-ans (val msg sc) sc))))
-
-(define ret-ans?
-  (lambda (ans)
-    (cases answer ans
-      (a-ans (val msg sc) (eqv? msg 'return)))))
-
-(define continue-ans?
-  (lambda (ans)
-    (cases answer ans
-      (a-ans (val msg sc) (eqv? msg 'continue)))))
-
-(define break-ans?
-  (lambda (ans)
-    (cases answer ans
-      (a-ans (val msg sc) (eqv? msg 'break)))))
-
-(define-datatype thunk thunk?
-  (a-thunk
-   (exp expression?)
-   (sc scope?)))
-
 ; Program
 (define value-of-program
   (lambda (pgm)
@@ -119,7 +70,7 @@
 (define value-of-assignment
   (lambda (stat sc)
     (cases assignment-stmt stat
-      (a-assign (identifier expr) (a-ans (a-none) '- (extend-sc sc identifier (a-thunk expr (cp-of-sc sc))))))))
+      (a-assign (identifier expr) (a-ans (none-val) '- (extend-sc sc identifier (a-thunk expr (cp-of-sc sc))))))))
       
     
   
@@ -526,4 +477,4 @@
        (#t (a-ans atom '- scope))))))
 
 
-(scan&parse "test.py")
+(evaluate "test.py")
