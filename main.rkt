@@ -9,7 +9,7 @@
 
 (define evaluate
   (lambda (input-string)
-    (value-of-program (scan&parse input-string))))
+    (value-of-program (a-program (scan&parse input-string)))))
     
   
 
@@ -103,7 +103,7 @@
 (define value-of-simple-stmt
   (lambda (stat sc)
     (cases simple-stmt stat
-      (assign-stmt (assign) (value-of-assignment assign sc))
+      (a-assign-stmt (assign) (value-of-assignment assign sc))
       (glob-stmt (glob) (value-of-global-stmt glob sc))
       (ret-stmt (ret) (value-of-return ret sc))
       (pass-stmt () (a-ans (a-none) '- sc))
@@ -119,7 +119,7 @@
 (define value-of-assignment
   (lambda (stat sc)
     (cases assignment-stmt stat
-      (a-assign-stmt (identifier expr) (a-ans (a-none) '- (extend-sc sc identifier (a-thunk expr (cp-of-sc sc))))))))
+      (a-assign (identifier expr) (a-ans (a-none) '- (extend-sc sc identifier (a-thunk expr (cp-of-sc sc))))))))
       
     
   
@@ -524,3 +524,6 @@
              (a-ans scope-val '- scope)))
        ((python-list? atom) (a-ans (an-eval-list atom (cp-of-sc scope)) '- scope))
        (#t (a-ans atom '- scope))))))
+
+
+(scan&parse "test.py")

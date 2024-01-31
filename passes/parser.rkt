@@ -1,113 +1,119 @@
 #lang racket
 
-(require "lexer.rkt")
+(require "lexer.rkt" 
+ "../grammar.rkt")
 (require parser-tools/lex
          parser-tools/yacc)
-
-
-(require "../datatypes.rkt")
-(#%require "../datatypes.rkt")
+                        
 
 (define python-parser
   (parser
-   (start Program)
+   (start program)
    (end EOF)
    (error void)
    (tokens
     LITERALS KWS OPS LOOP_KWS BOOL_KWS BOOL_OPS
-    COND_KWS COND_OPS ARITH_OPS INDEX_OPS END
-    )
+    COND_KWS COND_OPS ARITH_OPS INDEX_OPS END)
+    
    (grammar
-    (Program ((Statements) $1))
-    (Statements ((Statement SEMICOLON) (list $1))
-                ((Statements Statement SEMICOLON) (append $1 (list $2)))
-                )
-    (Statement ((Compound_stmt) $1)
-               ((Simple_stmt) $1)
-               )
-    (Simple_stmt ((Assignment) $1)
-                 ((Global_stmt) $1)
-                 ((Return_stmt) $1)
-                 ((PASS) (pass))
-                 ((BREAK) (break))
-                 ((CONTINUE) (continue))
-                 ((PRINT PAR) (print_stmt (empty-expr)))
-                 ((PRINT LPAR Arguments RPAR) (print_stmt $3))
-                 )
-    (Compound_stmt ((Function_def) $1)
-                   ((If_stmt) $1)
-                   ((For_stmt) $1)
-                   )
-    (Assignment ((ID ASSIGN Expression) (assign $1 $3)))
-    (Return_stmt ((RETURN) (return_void))
-                 ((RETURN Expression) (return $2))
-                 )
-    (Global_stmt ((GLOBAL ID) (global $2)))
-    (Function_def ((DEF ID LPAR Params RPAR COLON Statements) (func $2 $4 $7))
-                  ((DEF ID PAR COLON Statements) (func $2 (empty-param) $5))
-                  )
-    (Params ((Param_with_default) (func_params $1 (empty-param)))
-            ((Params COMMA Param_with_default) (func_params $3 $1))
-            )
-    (Param_with_default ((ID ASSIGN Expression) (with_default $1 $3)))
-    (If_stmt ((IF Expression COLON Statements Else_block) (if_stmt $2 $4 $5)))
-    (Else_block ((ELSE COLON Statements) $3))
-    (For_stmt ((FOR ID IN Expression COLON Statements) (for_stmt $2 $4 $6)))
-    (Expression ((Disjunction) $1))
-    (Disjunction ((Conjunction) $1)
-                 ((Disjunction OR Conjunction) (binary_op (lambda (x y) (or x y)) $1 $3))
-                 )
-    (Conjunction ((Inversion) $1)
-                 ((Conjunction AND Inversion) (binary_op (lambda (x y) (or x y)) $1 $3))
-                 )
-    (Inversion ((NOT Inversion) (unary_op not $2))
-               ((Comparison) $1)
-               )
-    (Comparison ((Eq_Sum) $1)
-                ((Lt_Sum) $1)
-                ((Gt_Sum) $1)
-                ((Sum) $1)
-                )
-    (Eq_Sum ((Sum ISEQ Sum) (binary_op equal? $1 $3)))
-    (Lt_Sum ((Sum LT Sum) (binary_op < $1 $3)))
-    (Gt_Sum ((Sum BT Sum) (binary_op > $1 $3)))
-    (Sum ((Sum PLUS Term) (binary_op (lambda (x y) (if (number? x) (+ x y) (append x y))) $1 $3))
-         ((Sum MINUS Term) (binary_op - $1 $3))
-         ((Term) $1)
-         )
-    (Term ((Term MULTI Factor) (binary_op * $1 $3))
-          ((Term DIV Factor) (binary_op / $1 $3))
-          ((Factor) $1)
-          )
-    (Factor ((PLUS Power) (unary_op + $2))
-            ((MINUS Power) (unary_op - $2))
-            ((Power) $1)
-            )
-    (Power ((Atom POW Factor) (binary_op expt $1 $3))
-           ((Primary) $1)
-           )
-    (Primary ((Atom) $1)
-             ((Primary LBRACK Expression RBRACK) (list_ref $1 $3))
-             ((Primary PAR) (function_call $1 (empty-expr)))
-             ((Primary LPAR Arguments RPAR) (function_call $1 $3))
-             )
-    (Arguments ((Expression) (expressions $1 (empty-expr)))
-               ((Arguments COMMA Expression) (expressions $3 $1))
-               )
-    (Atom ((ID) (ref $1))
-          ((TRUE) (atomic_bool_exp true))
-          ((FALSE) (atomic_bool_exp false))
-          ((NONE) (atomic_null_exp))
-          ((NUMBER) (atomic_num_exp $1))
-          ((List) $1)
-          )
-    (List ((LBRACK Expressions RBRACK) (atomic_list_exp $2))
-          ((BRACK) (atomic_list_exp (empty-expr)))
-          )
-    (Expressions ((Expressions COMMA Expression) (expressions $3 $1))
-                 ((Expression) (expressions $1 (empty-expr)))
-                 ))
-   ;    (debug "parser-log.txt")
-   ))
+    (program ((statements) (a-program $1)))
 
+    (statements ((statement SEMICOLON) (a-statement $1))
+                ((statements statement SEMICOLON) (cum-statements $1 $2)))
+                
+    (statement ((compound-stmt) (a-compound-stmt $1))
+               ((simple-stmt) (a-simple-stmt $1)))
+               
+    (simple-stmt ((assignment-stmt) (a-assign-stmt $1))
+                 ((global-stmt) (glob-stmt $1))
+                 ((return-stmt) (ret-stmt $1))
+                 ((PASS) (pass-stmt))
+                 ((BREAK) (break-stmt))
+                 ((CONTINUE) (continue-stmt))
+                 ((PRINT PAR) (simple-print-stmt))
+                 ((PRINT LPAR arguments RPAR) (a-print-stmt $3)))
+                 
+    (compound-stmt ((function-def) (cmp-function-def $1))
+                   ((if-stmt) (cmp-if-stmt $1))
+                   ((for-stmt) (cmp-for-stmt $1)))
+                   
+    (assignment-stmt ((ID ASSIGN expression) (a-assign $1 $3)))
+
+    (return-stmt ((RETURN) (return-void-stmt))
+                 ((RETURN expression) (return-exp-stmt $2)))
+                 
+    (global-stmt ((GLOBAL ID) (a-global-stmt $2)))
+
+    (function-def ((DEF ID LPAR params RPAR COLON statements) (func-def-with-params $2 $4 $7))
+                  ((DEF ID PAR COLON statements) (func-def-no-params $2 $5)))
+                  
+    (params ((param) (empty-param $1))
+            ((params COMMA param) (func-params $3 $1)))
+            
+    (param ((ID ASSIGN expression) (with_default $1 $3)))
+
+    (if-stmt ((IF expression COLON statements else-block) (a-if-stmt $2 $4 $5)))
+
+    (else-block ((ELSE COLON statements) (a-else-block $3)))
+
+    (for-stmt ((FOR ID IN expression COLON statements) (a-for-stmt $2 $4 $6)))
+
+    (expression ((disjunction) (disjunct-expression $1)))
+
+    (disjunction ((conjunction) (a-disjunction $1))
+                 ((disjunction OR conjunction) (cum-disjunction $1 $3)))
+                 
+    (conjunction ((inversion) (a-conjunction $1))
+                 ((conjunction AND inversion) (cum-conjunction $1 $3)))
+                 
+    (inversion ((NOT inversion) (not-of-inversion $2))
+               ((comparison) (a-comparison $1)))
+               
+    (comparison ((eq-sum) (eq-comp $1))
+                ((lt-sum) (lt-comp $1))
+                ((gt-sum) (gt-comp $1))
+                ((sum) (sum-comp $1)))
+                
+    (eq-sum ((sum ISEQ sum) (a-eq-sum $1 $3)))
+
+    (lt-sum ((sum LT sum) (a-lt-sum $1 $3)))
+
+    (gt-sum ((sum BT sum) (a-gt-sum $1 $3)))
+
+    (sum ((sum PLUS term) (plus-sum $1 $3))
+         ((sum MINUS term) (minus-sum $1 $3))
+         ((term) (term-sum $1)))
+         
+    (term ((term MULTI factor) (mult-term $1 $3))
+          ((term DIV factor) (div-term $1 $3))
+          ((factor) (factor-term $1)))
+          
+    (factor ((PLUS power) (pos-factor $2))
+            ((MINUS power) (neg-factor $2))
+            ((power) (power-factor $1)))
+            
+    (power ((atom POW factor) (atom-powered $1 $3))
+           ((primary) (a-primary $1)))
+           
+    (primary ((atom) (a-atom $1))
+             ((primary LBRACK expression RBRACK) (arr-access $1 $3))
+             ((primary PAR) (func-call-no-arg $1))
+             ((primary LPAR arguments RPAR) (func-call-with-args $1 $3)))
+             
+    (arguments ((expression) (arg-expression $1))
+               ((arguments COMMA expression) (args-expression $3 $1)))
+               
+    (atom ((ID) (a-id $1))
+          ((TRUE) (a-bool true))
+          ((FALSE) (a-bool false))
+          ((NONE) (a-none))
+          ((NUMBER) (a-num $1))
+          ((python-list) (a-list $1)))
+          
+    (python-list ((LBRACK expressions RBRACK) (filled-list $2))
+          ((BRACK) (empty-list)))
+          
+    (expressions ((expressions COMMA expression) (cum-expression $3 $1))
+                 ((expression) (a-expression $1))))))
+                 
 (provide (all-defined-out))

@@ -65,15 +65,11 @@
    (
     (:or (:+ (char-range #\0 #\9))
          (:: (:+ (char-range #\0 #\9)) #\. (:+ (char-range #\0 #\9))))
-    (token-NUMBER (string->number lexeme))
-    )
-   (
-    (:: (:or "_" (char-range "a" "z") (char-range "A" "Z"))
-        (:* (:or "_" (char-range "a" "z") (char-range "A" "Z") (char-range #\0 #\9)))
-        ;[_a-zA-Z][_a-zA-Z0-9]*
-        )
-    (token-ID lexeme)
-    )
+    (token-NUMBER (string->number lexeme)))
+    
+   ((:: (:or (char-range #\A #\Z) (char-range #\a #\z) #\_) (:* (:or (char-range #\A #\Z) (char-range #\a #\z) #\_ (char-range #\0 #\9))))
+    (token-ID (string->symbol lexeme)))
+    
    ;LITERALS
    (whitespace (python-lexer input-port))
    ((eof) (token-EOF))))
@@ -84,7 +80,7 @@
   (let ([l (open-input-string prog-string)])
     (begin
       (lambda ()
-        (python-lexer l)
-        ))))
+        (python-lexer l)))))
+        
 
 (provide (all-defined-out))

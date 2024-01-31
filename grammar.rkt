@@ -36,7 +36,7 @@
 ; Simple_stmt → 'pass' | 'break' | 'continue'
 ; Simple_stmt → 'print' '()' | 'print' '('Arguments')'
 (define-datatype simple-stmt simple-stmt?
-  (assign-stmt
+  (a-assign-stmt
    (assign assignment-stmt?))
    
   (glob-stmt
@@ -71,7 +71,7 @@
 
 ; Assignment → ID '=' Expression
 (define-datatype assignment-stmt assignment-stmt?
-  (a-assign-stmt
+  (a-assign
    (identifier symbol?)
    (expr expression?)))
    
@@ -107,7 +107,8 @@
 
 ; Params → Param_with_default | Params ',' Param_with_default
 (define-datatype params params?
-  (empty-param)
+  (empty-param
+   (param param?))
   (func-params 
    (param param?) 
    (rest-params params?)))
@@ -292,6 +293,7 @@
    
   (func-call-no-arg
    (primary primary?))
+   
   (func-call-with-args
    (primary primary?)
    (arguments arguments?)))
