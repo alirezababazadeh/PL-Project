@@ -1,4 +1,4 @@
-#lang racket
+#lang debug racket
 
 (require (lib "eopl.ss" "eopl"))
 (require "parse.rkt"
@@ -24,22 +24,17 @@
 
 ; Statements
 (define value-of-stats
-  (lambda (stats sc)
-    (cases statements stats
+  (lambda (ex sc)
+    (cases statements ex
       (a-statement (stat)
                    (value-of-stmt stat sc))
                    
       (cum-statements (stats stat)
-                     (let ((answer-stats (value-of-stats stats sc)))
-                        (if (not (or (ret-ans? answer-stats) (break-ans? answer-stats) (continue-ans? answer-stats)))
-                            (value-of-stmt stat (extract-sc answer-stats))
-                            answer-stats))))))
+                      (let ((answer-stats (value-of-stats stats sc)))
+                          (if (not (or (ret-ans? answer-stats) (break-ans? answer-stats) (continue-ans? answer-stats)))
+                              (value-of-stmt stat (extract-sc answer-stats))
+                              answer-stats))))))
                         
-                      
-      
-    
-  
-
 ; Statement
 (define value-of-stmt
   (lambda (stat sc)
@@ -47,9 +42,6 @@
       (a-compound-stmt (cmp-stat) (value-of-compound-stmt cmp-stat sc))
       (a-simple-stmt (sim-stmt) (value-of-simple-stmt sim-stmt sc)))))
       
-    
-  
-
 ; Simple-stmt
 (define value-of-simple-stmt
   (lambda (stat sc)
@@ -81,7 +73,7 @@
     (cases return-stmt stat
       (return-void-stmt () (a-ans (none-stmt) 'return sc))
       (return-exp-stmt (expr) (let
-                                  ((resp (value-of-expression expr sc)))
+                                ((resp (value-of-expression expr sc)))
                                 (a-ans (ans-val resp) 'return (extract-sc resp)))))))
       
 ; Global-stmt
@@ -354,7 +346,7 @@
   (lambda (ex)
     (cases thunk ex
       (a-thunk (exp sc)
-               (ans-val (value-of-expression exp sc))))))
+              (ans-val (value-of-expression exp sc))))))
 
 
 (define value-of-param-with-default
@@ -373,33 +365,27 @@
 
 (define value-of-print
   (lambda (args scope)
-    (display-lines (arguments->list-val args scope))))
+    (begin
+      (display-lines (arguments->list-val args scope))
+      (a-ans (none-stmt) '- scope))))
 
 (define apply-function
-  (lambda (func arg-list outer-scope)
-    (cases function func
-      (a-function (ID params statements scope)
-                  (let ((scope (extend-sc scope ID func)))
-                    (let ((scope (add-params-to-scope params scope)))
-                      (let ((thunk-scope (cp-of-sc outer-scope)))
-                        (let ((scope (add-args-to-scope arg-list params scope thunk-scope)))
-                          (value-of-stats statements scope)))))))))
+  (lambda (ex arg-list outer-scope)
+    (cases func ex
+      (a-func (identifier params stats sc)
+              (let ((sc (extend-sc sc identifier ex)))
+                (let ((sc (add-params-to-scope params sc)))
+                  (let ((thunk-scope (cp-of-sc outer-scope)))
+                    (let ((scope (add-args-to-scope arg-list params sc thunk-scope)))
+                      (value-of-stats stats sc)))))))))
 
 (define add-params-to-scope
   (lambda (params scope)
-    (if (null? params)
+    (if (none? params)
         scope
         (let ((ans (value-of-param-with-default (car params) scope)))
           (add-params-to-scope (cdr params) (extract-sc ans))))))
 
-
-
-(define-datatype function function?
-  (a-function
-   (ID symbol?)
-   (params (lambda (p) (or (null? p) (params? p))))
-   (statements statements?)
-   (scope scope?)))
 
 (define add-args-to-scope
   (lambda (arg-list params scope thunk-scope)
