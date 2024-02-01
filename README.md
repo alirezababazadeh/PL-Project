@@ -65,19 +65,65 @@ Here are some examples:
 
 ```
 # Simple Function Definition
-def add(x, y): 
-    return x + y;
+def add(x = 0, y = 0): 
+    return x + y;;
+
+print(add(1, 2));
+print(add());
 
 # Conditional Statement
+x = 1
 if x > 0:
-    print("Positive");
+    print(x);
 else:
-    print("Non-Positive");
+    print(0);
 
-# Looping Statement
-for i in range(5):
-    print(i);
+# For Statement
+def get_first_even_idx(l = []):
+    j = 0;
+    len = 0;
+    for i in l:
+        len = len + 1;
+    ;
+    
+    for i in l:
+        if i == 2 or i == 2 or i == 4 or i == 6 or i == 8:
+            break;
+        else:
+            j = j + 1;
+            continue;
+        ;
+    ;
+
+    if j == len:
+        j = -1;
+    else:
+        pass;
+    ;
+
+    return j;
+;
+
+l = [1, 5, 7, 9, 2, 1];
+z = [1, 3, 5];
+
+print(l);
+print(get_first_even_idx(l));
+
+print(z);
+print(get_first_even_idx(z));
 
 # Lazy Evaluation
-result = 1 + (print("This will be lazily evaluated") or 0);
+x = 0;
+def func():
+    global x;
+    x = 1;
+;
+
+x = 2;
+print(x);
+a = func();
+print(x);
+print(a);
+print(x);
 ```
