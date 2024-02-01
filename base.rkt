@@ -54,7 +54,7 @@
 
 (define-datatype evaluated-list evaluated-list?
   (a-evaluated-list
-   (python-list python-list?)
+   (python-list (lambda (p) (or (python-list? p) (list? p))))
    (sc scope?)))
 
 (define repr

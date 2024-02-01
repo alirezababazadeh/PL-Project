@@ -265,7 +265,7 @@
                           (a-evaluated-list (py-list1 sc1)
                                         (cases evaluated-list exp2
                                           (a-evaluated-list (py-list2 sc2)
-                                                        (a-ans (a-evaluated-list (append py-list1 py-list2) scope) '- scope))))))
+                                                           (a-ans (a-evaluated-list (append (python-list->list-value py-list1) (python-list->list-value py-list2)) scope) '- scope))))))
                        (else (a-ans (+ exp1 exp2) '- scope)))))))
       (minus-sum (sum term)
                (let ((ans1 (value-of-sum sum scope)))
@@ -327,9 +327,13 @@
   
 (define list-refrence 
  (lambda (lst-exps idx)
-  (cases python-list lst-exps
+   (if (list? lst-exps) 
+   (list-ref lst-exps idx) 
+   (cases python-list lst-exps
    (filled-list (exprs) (list-ref (expressions->list-val exprs) idx))
-   (empty-list () -1))))
+   (empty-list () -1)))
+   )
+  )
 
 (define value-of-primary
   (lambda (ex scope)
