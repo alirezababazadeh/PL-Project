@@ -57,7 +57,7 @@ The language follows the specified grammar rules:
 To use this, follow these steps:
 
 1. Install Racket: [Racket Installation Guide](https://docs.racket-lang.org/pollen/Installation.html)
-2. Clone the LazyEval repository.
+2. Clone this repository.
 3. Run your programs using the Racket interpreter.
 
 ## Examples
