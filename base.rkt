@@ -57,4 +57,12 @@
    (python-list python-list?)
    (sc scope?)))
 
+(define repr
+  (lambda (val)
+    (cond
+      [(boolean? val) (if val 'True 'False)]
+      [else val])
+    )
+  )
+
 (provide (all-defined-out))
