@@ -374,7 +374,7 @@
 (define value-of-print
   (lambda (args scope)
     (begin
-      (display-lines (arguments->list-val args scope))
+      (display-lines (map repr (arguments->list-val args scope)))
       (a-ans (none-stmt) '- scope))))
 
 (define params->list-value
