@@ -54,7 +54,9 @@
       (pass-stmt () (a-ans (none-stmt) '- sc))
       (break-stmt () (a-ans (none-stmt) 'break sc))
       (continue-stmt () (a-ans (none-stmt) 'continue sc))
-      (simple-print-stmt () (displayln ""))
+      (simple-print-stmt () (begin
+                              (displayln "")
+                              (a-ans (none-stmt) '- sc)))
       (a-print-stmt (pstmt) (value-of-print pstmt sc)))))
       
     
