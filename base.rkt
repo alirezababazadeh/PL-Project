@@ -4,14 +4,8 @@
 (require "grammar.rkt"
          "envrn.rkt")
 
-(define-datatype expval expval?
-  (num-val
-   (num number?))
-  (bool-val
-   (bool boolean?))
-  (none-val)
-  (func-val
-   (f func?)))
+(define expval?
+  (lambda (e) (or (number? e) (boolean? e) (none? e) (func? e) (evaluated-list? e))))
    
   
 
@@ -50,3 +44,17 @@
   (a-thunk
    (exp expression?)
    (sc scope?)))
+
+(define-datatype func func?
+  (a-func
+   (identifier symbol?)
+   (params (lambda (p) (or (none? p) (params? p))))
+   (stats statements?)
+   (sc scope?)))
+
+(define-datatype evaluated-list evaluated-list?
+  (a-evaluated-list
+   (python-list python-list?)
+   (sc scope?)))
+
+(provide (all-defined-out))

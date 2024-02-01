@@ -13,10 +13,7 @@
       (if found
           (cdr found)
           (eopl:error 'apply-env "bounded value not found for ~s" var)))))
-          
-      
-    
-  
+
 
 (define empty-env 
   (lambda () (list)))

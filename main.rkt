@@ -57,10 +57,10 @@
       (a-assign-stmt (assign) (value-of-assignment assign sc))
       (glob-stmt (glob) (value-of-global-stmt glob sc))
       (ret-stmt (ret) (value-of-return ret sc))
-      (pass-stmt () (a-ans (a-none) '- sc))
-      (break-stmt () (a-ans (a-none) 'break sc))
-      (continue-stmt () (a-ans (a-none) 'continue sc))
-      (simple-print-stmt () (display ""))
+      (pass-stmt () (a-ans (none-stmt) '- sc))
+      (break-stmt () (a-ans (none-stmt) 'break sc))
+      (continue-stmt () (a-ans (none-stmt) 'continue sc))
+      (simple-print-stmt () (displayln ""))
       (a-print-stmt (pstmt) (value-of-print pstmt sc)))))
       
     
@@ -70,7 +70,7 @@
 (define value-of-assignment
   (lambda (stat sc)
     (cases assignment-stmt stat
-      (a-assign (identifier expr) (a-ans (none-val) '- (extend-sc sc identifier (a-thunk expr (cp-of-sc sc))))))))
+      (a-assign (identifier expr) (a-ans (none-stmt) '- (extend-sc sc identifier (a-thunk expr (cp-of-sc sc))))))))
       
     
   
@@ -79,23 +79,17 @@
 (define value-of-return
   (lambda (stat sc)
     (cases return-stmt stat
-      (return-void-stmt () (a-ans (a-none) 'return sc))
+      (return-void-stmt () (a-ans (none-stmt) 'return sc))
       (return-exp-stmt (expr) (let
                                   ((resp (value-of-expression expr sc)))
                                 (a-ans (ans-val resp) 'return (extract-sc resp)))))))
       
-    
-  
-
 ; Global-stmt
 (define value-of-global-stmt
   (lambda (stat sc)
     (cases global-stmt stat
-      (a-global-stmt (identifier) (a-ans (a-none) '- (add-to-ls-gb-vars sc identifier))))))
+      (a-global-stmt (identifier) (a-ans (none-stmt) '- (add-to-ls-gb-vars sc identifier))))))
       
-    
-  
-
 ; Compound-stmt
 (define value-of-compound-stmt
   (lambda (stat sc)
@@ -104,35 +98,22 @@
       (cmp-if-stmt (if-stmt) (value-of-if-stmt if-stmt sc))
       (cmp-for-stmt (for-stmt) (value-of-for-stmt for-stmt sc)))))
       
-    
-  
 
 ; Function_def
-(define-datatype func func?
-  (a-func
-   (identifier symbol?)
-   (params (lambda (p) (or (none? p) (params? p))))
-   (stats statements?)
-   (sc scope?)))
-
 (define value-of-func-def
   (lambda (func-def sc)
     (cases function-def func-def
       (func-def-with-params
        (identifier params stats)
        (let ((f (a-func identifier params stats (lc-sc-new sc))))
-         (a-ans (a-none) '- (extend-sc sc identifier f))))
+         (a-ans (none-stmt) '- (extend-sc sc identifier f))))
          
        
       (func-def-no-params 
        (identifier stats)
-       (let ((f (a-func identifier (a-none) stats (lc-sc-new sc))))
-         (a-ans (a-none) '- (extend-sc sc identifier f)))))))
+       (let ((f (a-func identifier (none-stmt) stats (lc-sc-new sc))))
+         (a-ans (none-stmt) '- (extend-sc sc identifier f)))))))
          
-       
-      
-    
-  
 
 ; If_stmt
 (define value-of-if-stmt
@@ -160,13 +141,6 @@
        (value-of-stats else-stats sc)))))
       
     
-  
-
-; For_stmt
-(define-datatype evaluated-list evaluated-list?
-  (a-evaluated-list
-   (python-list python-list?)
-   (sc scope?)))
 
 ; for stmt
 (define value-of-for-stmt
@@ -181,27 +155,16 @@
             (value-of-for-body iter python-list sc stats (extract-sc resp)))))))))
             
            
-         
-       
-      
-    
-  
-
 (define value-of-for-body
   (lambda (iter lst stored-sc stats sc)
     (if (null? lst)
-       (a-ans (a-none) '- sc)
+       (a-ans (none-stmt) '- sc)
        (let* ((resp1 (value-of-expression (car lst) stored-sc))
               (resp2 (value-of-stats stats (extend-sc sc iter (ans-val resp1)))))
          (if (break-ans? resp2)
-            (a-ans (a-none) '- (extract-sc resp2))
+            (a-ans (none-stmt) '- (extract-sc resp2))
             (value-of-for-body iter (cdr lst) stored-sc stats (extract-sc resp2)))))))
-            
-         
        
-    
-  
-
 (define value-of-expression
  (lambda (exp scope)
   (cases expression exp
@@ -297,12 +260,12 @@
                          (exp2 (ans-val ans2))
                          (scope (extract-sc ans2)))
                      (cond
-                       ((eval-list? exp1)
-                        (cases eval-list exp1
-                          (an-eval-list (py-list1 sc1)
-                                        (cases eval-list exp2
-                                          (an-eval-list (py-list2 sc2)
-                                                        (a-ans (an-eval-list (append py-list1 py-list2) scope) '- scope))))))
+                       ((evaluated-list? exp1)
+                        (cases evaluated-list exp1
+                          (a-evaluated-list (py-list1 sc1)
+                                        (cases evaluated-list exp2
+                                          (a-evaluated-list (py-list2 sc2)
+                                                        (a-ans (a-evaluated-list (append py-list1 py-list2) scope) '- scope))))))
                        (else (a-ans (+ exp1 exp2) '- scope)))))))
       (minus-sum (sum term)
                (let ((ans1 (value-of-sum sum scope)))
@@ -356,6 +319,17 @@
       (a-primary (primary)
                  (value-of-primary primary scope)))))
 
+(define expressions->list-val
+ (lambda (exps)
+  (cases expressions exps
+   (cum-expression (exprs expr) (append (expressions->list-val exprs) (list expr)))
+   (a-expression (expr) (list expr)))))
+  
+(define list-refrence 
+ (lambda (lst-exps idx)
+  (cases python-list lst-exps
+   (filled-list (exprs) (list-ref (expressions->list-val exprs) idx))
+   (empty-list () -1))))
 
 (define value-of-primary
   (lambda (ex scope)
@@ -364,10 +338,10 @@
               (value-of-atom atom scope))
       (arr-access (primary expr)
                   (let ((ans1 (value-of-primary primary scope)))
-                    (let ((ans2 (value-of-expression exp (extract-sc ans1))))
-                      (cases eval-list (ans-val ans1)
-                        (an-eval-list (py-list sc)
-                                      (a-ans (ans-val (value-of-expression (list-ref py-list (ans-val ans2)) sc)) '- scope))))))
+                    (let ((ans2 (value-of-expression expr (extract-sc ans1))))
+                      (cases evaluated-list (ans-val ans1)
+                        (a-evaluated-list (py-list sc)
+                                      (a-ans (ans-val (value-of-expression (list-refrence py-list (ans-val ans2)) sc)) '- scope))))))
       (func-call-no-arg (primary)
                         (let ((ans (value-of-primary primary scope)))
                           (a-ans (ans-val (apply-function (ans-val ans) '() (extract-sc ans))) '- (extract-sc ans))))
@@ -390,35 +364,16 @@
                     (let ((exp-val (ans-val (value-of-expression expr scope))))
                       (a-ans exp-val '- (extend-sc scope identifier exp-val)))))))
 
+
+(define arguments->list-val
+ (lambda (args-o scope)
+        (cases arguments args-o
+         (arg-expression (expr) (list (ans-val (value-of-expression expr scope))))
+         (args-expression (args expr) (append (arguments->list-val args scope) (list (ans-val (value-of-expression expr scope))))))))
+
 (define value-of-print
-  (lambda (ex scope)
-    (cases print-stmt ex
-      (a-print  (args)
-                (letrec ((eval-and-print-atoms (lambda (items scope res-list)
-                                                 (if (null? items)
-                                                     (begin
-                                                       (cond
-                                                        ((and (list? res-list) (null? (cdr res-list))) (displayln (car res-list)))
-                                                        (else (displayln res-list)))
-                                                       (a-ans (a-none) '- scope))
-                                                     (let ((ans (value-of-atom (car items) scope)))
-                                                       (eval-and-print-atoms (cdr items) (extract-sc ans) (append res-list (list (atom->printable (ans-val ans))))))))))
-                  (eval-and-print-atoms args scope (list)))))))
-
-
-(define atom->printable
-  (lambda (at)
-    (cond
-      ((eval-list? at
-        (cases eval-list at
-          (an-eval-list (py-list sc)
-                        (map (lambda (a) (atom->printable
-                                          (ans-val (value-of-expression a sc)))) py-list)))))
-      ((boolean? at)
-       (if at 'True 'False))
-      ((none? at) 'None)
-      ((and (list? at) (null? (cdr at))) (car at))
-      (else at))))
+  (lambda (args scope)
+    (display-lines (arguments->list-val args scope))))
 
 (define apply-function
   (lambda (func arg-list outer-scope)
@@ -459,22 +414,18 @@
                            thunk-scope))))))
                                 
 
-(define-datatype eval-list eval-list?
-  (an-eval-list
-   (py-list python-list?)
-   (scope scope?)))
 
 (define value-of-atom
   (lambda (atom scope)
-    (cond
-      ((symbol? atom)
-       (let ((scope-val (apply-sc scope atom)))
-         (if (thunk? scope-val)
-             (let ((exp-val (value-of-thunk scope-val)))
-               (a-ans exp-val '- (extend-sc scope atom exp-val)))
-             (a-ans scope-val '- scope)))
-       ((python-list? atom) (a-ans (an-eval-list atom (cp-of-sc scope)) '- scope))
-       (#t (a-ans atom '- scope))))))
+     (cond
+       ((symbol? atom)
+        (let ((scope-val (apply-sc scope atom)))
+          (if (thunk? scope-val)
+              (let ((exp-val (value-of-thunk scope-val)))
+                (a-ans exp-val '- (extend-sc scope atom exp-val)))
+              (a-ans scope-val '- scope))))
+      ((python-list? atom) (a-ans (a-evaluated-list atom (cp-of-sc scope)) '- scope))
+      (#t (a-ans atom '- scope)))))
 
 
 (evaluate "test.py")

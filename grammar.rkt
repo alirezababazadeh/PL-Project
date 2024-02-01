@@ -50,11 +50,8 @@
   (continue-stmt)
   (simple-print-stmt)
   (a-print-stmt
-   (pstmt print-stmt?)))
+   (args arguments?)))
    
-(define-datatype print-stmt print-stmt?
- (a-print 
-  (args arguments?)))
 
 ; Compound_stmt → Function_def | If_stmt | For_stmt
 (define-datatype compound-stmt compound-stmt?
@@ -118,7 +115,7 @@
 ; Param_with_default → ID '=' Expression
 (define-datatype param param?
   (with_default
-   (identifier string?)
+   (identifier symbol?)
    (expr expression?)))
    
   
@@ -316,20 +313,8 @@
   
 
 ; Atom → ID | 'True' | 'False' | 'None' | NUMBER | List
-(define-datatype atom atom?
-  (a-id
-   (identifier symbol?))
-   
-  (a-bool
-   (bool boolean?))
-   
-  (a-none)
-   
-  (a-num
-   (num number?))
-   
-  (a-list
-   (py-list python-list?)))
+(define atom?
+  (lambda (a) (or (symbol? a) (boolean? a) (none? a) (number? a) (python-list? a))))
    
   
 

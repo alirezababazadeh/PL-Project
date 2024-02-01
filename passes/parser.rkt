@@ -103,17 +103,17 @@
     (arguments ((expression) (arg-expression $1))
                ((arguments COMMA expression) (args-expression $3 $1)))
                
-    (atom ((ID) (a-id $1))
-          ((TRUE) (a-bool true))
-          ((FALSE) (a-bool false))
-          ((NONE) (a-none))
-          ((NUMBER) (a-num $1))
-          ((python-list) (a-list $1)))
+    (atom ((ID) $1)
+          ((TRUE) #t)
+          ((FALSE) #f)
+          ((NONE) (none-stmt))
+          ((NUMBER) $1)
+          ((python-list) $1))
           
     (python-list ((LBRACK expressions RBRACK) (filled-list $2))
           ((BRACK) (empty-list)))
           
-    (expressions ((expressions COMMA expression) (cum-expression $3 $1))
+    (expressions ((expressions COMMA expression) (cum-expression $1 $3))
                  ((expression) (a-expression $1))))))
                  
 (provide (all-defined-out))
