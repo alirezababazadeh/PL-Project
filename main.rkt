@@ -395,7 +395,7 @@
                   (let ((sc (add-params-to-scope (params->list-value params) sc)))
                     (let ((thunk-scope (cp-of-sc outer-scope)))
                       (let ((scope (add-args-to-scope (get-args-raw-list arg-list) (params->list-value params) sc thunk-scope)))
-                        (value-of-stats stats sc)))))))))
+                        (value-of-stats stats scope)))))))))
 
 (define add-params-to-scope
   (lambda (params scope)
