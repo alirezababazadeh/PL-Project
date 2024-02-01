@@ -137,10 +137,16 @@
        (value-of-stats else-stats sc)))))
       
 (define python-list->list-value
- (lambda (py-lst)
-  (cases python-list py-lst
-   (filled-list (exprs) (expressions->list-val exprs))
-   (empty-list () '()))))
+  (lambda (py-lst)
+    (if (list? py-lst)
+       py-lst
+       (cases python-list py-lst
+         (filled-list (exprs) (expressions->list-val exprs))
+         (empty-list () '())
+         )
+       )
+    )
+  )
 
 ; for stmt
 (define value-of-for-stmt
@@ -374,6 +380,28 @@
         (cases arguments args-o
          (arg-expression (expr) (list (ans-val (value-of-expression expr scope))))
          (args-expression (args expr) (append (arguments->list-val args scope) (list (ans-val (value-of-expression expr scope))))))))
+
+(define repr
+  (lambda (val)
+    (cond
+      [(evaluated-list? val) 
+       (cases evaluated-list val
+         (a-evaluated-list 
+          (python-list sc) 
+          (let 
+              ((result-lst
+                (map
+                 (lambda (expr) (repr (ans-val (value-of-expression expr sc))))
+                 (python-list->list-value python-list)
+                 )))
+            (format "[~a]" (string-join (map number->string result-lst) ", ")))
+          )
+         )]
+      [(boolean? val) (if val 'True 'False)]
+      [(none? val) 'None]
+      [else val])
+    )
+  )
 
 (define value-of-print
   (lambda (args scope)
