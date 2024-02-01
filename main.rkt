@@ -134,7 +134,11 @@
        (else-stats)
        (value-of-stats else-stats sc)))))
       
-    
+(define python-list->list-value
+ (lambda (py-lst)
+  (cases python-list py-lst
+   (filled-list (exprs) (expressions->list-val exprs))
+   (empty-list () '()))))
 
 ; for stmt
 (define value-of-for-stmt
@@ -146,51 +150,18 @@
          (cases evaluated-list (ans-val resp)
            (a-evaluated-list 
             (python-list sc)
-            (value-of-for-body iter python-list sc stats (extract-sc resp)))))))))
-            
-           
+            (value-of-for-body iter (python-list->list-value python-list) sc stats (extract-sc resp)))))))))
+
 (define value-of-for-body
   (lambda (iter lst stored-sc stats sc)
-    (cases python-list lst
-      (filled-list
-       (exprs)
-       (cases expressions exprs
-         (cum-expression
-          (exprs expr)
-          (value-of-for-body-inner iter expr exprs stored-sc stats sc)
-          )
-         (a-expression (expr) (value-of-for-body-finisher iter expr stored-sc stats sc))
-         )
-       )
-      (empty-list () (a-ans (none-stmt) '- sc))
-      )
-    )
-  )
-
-(define value-of-for-body-inner
-  (lambda (iter expr exprs stored-sc stats sc)
-    (let* ((resp1 (value-of-expression expr stored-sc))
-           (resp2 (value-of-stats stats (extend-sc sc iter (ans-val resp1)))))
-      (if (break-ans? resp2)
-         (a-ans (none-stmt) '- (extract-sc resp2))
-         (cases expressions exprs
-           (cum-expression
-            (exprs expr)
-            (value-of-for-body-inner iter expr exprs stored-sc stats (extract-sc resp2)))
-           (a-expression
-            (expr)
-            (value-of-for-body-finisher iter expr stored-sc stats (extract-sc resp2)))
-           )))
-    )
-  )
-
-(define value-of-for-body-finisher
-  (lambda (iter expr stored-sc stats sc)
-    (let* ((resp1 (value-of-expression expr stored-sc))
-           (resp2 (value-of-stats stats (extend-sc sc iter (ans-val resp1)))))
-      (a-ans (none-stmt) '- (extract-sc resp2)))
-    )
-  )
+    (if (null? lst)
+       (a-ans (none-stmt) '- sc)
+       (let* ((resp1 (value-of-expression (car lst) stored-sc))
+              (resp2 (value-of-stats stats (extend-sc sc iter (ans-val resp1)))))
+         (if (break-ans? resp2)
+            (a-ans (none-stmt) '- (extract-sc resp2))
+            (value-of-for-body iter (cdr lst) stored-sc stats (extract-sc resp2)))))))
+  
        
 (define value-of-expression
  (lambda (exp scope)
@@ -465,4 +436,4 @@
       (#t (a-ans atom '- scope)))))
 
 
-(evaluate "test_cases/test1_lite.txt")
+(evaluate "test.py")
