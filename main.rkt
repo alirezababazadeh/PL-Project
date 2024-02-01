@@ -10,7 +10,9 @@
 
 (define evaluate
   (lambda (input-string)
-    (value-of-program (scan&parse input-string))))
+    (begin
+      (value-of-program (scan&parse input-string))
+      (display ""))))
     
   
 ; Program
@@ -369,22 +371,38 @@
       (display-lines (arguments->list-val args scope))
       (a-ans (none-stmt) '- scope))))
 
+(define params->list-value
+ (lambda (pms)
+  (if (none? pms)
+   '()
+    (cases params pms
+     (empty-param (param) (list param))
+     (func-params (param rest-params) (append (params->list-value rest-params) (list param)))))))
+
+(define get-args-raw-list
+ (lambda (ars)
+  (if (null? ars)
+    '()
+    (cases arguments ars
+     (arg-expression (expr) (list expr))
+     (args-expression (args expr) (append (get-args-raw-list args) (list expr)))))))
+
 (define apply-function
   (lambda (ex arg-list outer-scope)
-    (cases func ex
-      (a-func (identifier params stats sc)
-              (let ((sc (extend-sc sc identifier ex)))
-                (let ((sc (add-params-to-scope params sc)))
-                  (let ((thunk-scope (cp-of-sc outer-scope)))
-                    (let ((scope (add-args-to-scope arg-list params sc thunk-scope)))
-                      (value-of-stats stats sc)))))))))
+      (cases func ex
+        (a-func (identifier params stats sc)
+                (let ((sc (extend-sc sc identifier ex)))
+                  (let ((sc (add-params-to-scope (params->list-value params) sc)))
+                    (let ((thunk-scope (cp-of-sc outer-scope)))
+                      (let ((scope (add-args-to-scope (get-args-raw-list arg-list) (params->list-value params) sc thunk-scope)))
+                        (value-of-stats stats sc)))))))))
 
 (define add-params-to-scope
   (lambda (params scope)
-    (if (none? params)
-        scope
-        (let ((ans (value-of-param-with-default (car params) scope)))
-          (add-params-to-scope (cdr params) (extract-sc ans))))))
+      (if (null? params)
+          scope
+          (let ((ans (value-of-param-with-default (car params) scope)))
+            (add-params-to-scope (cdr params) (extract-sc ans))))))
 
 
 (define add-args-to-scope
