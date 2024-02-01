@@ -61,7 +61,7 @@ To use this, follow these steps:
 3. Run your programs using the Racket interpreter.
 
 ## Examples
-Here are some examples of LazyEval code:
+Here are some examples:
 
 ```
 # Simple Function Definition
