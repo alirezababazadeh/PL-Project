@@ -101,7 +101,7 @@
              ((primary LPAR arguments RPAR) (func-call-with-args $1 $3)))
              
     (arguments ((expression) (arg-expression $1))
-               ((arguments COMMA expression) (args-expression $3 $1)))
+               ((arguments COMMA expression) (args-expression $1 $3)))
                
     (atom ((ID) $1)
           ((TRUE) #t)
