@@ -61,6 +61,7 @@
   (lambda (val)
     (cond
       [(boolean? val) (if val 'True 'False)]
+      [(none? val) 'None]
       [else val])
     )
   )

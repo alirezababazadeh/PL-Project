@@ -438,4 +438,15 @@
       (#t (a-ans atom '- scope)))))
 
 
-(evaluate "test.py")
+; (for-each 
+;  (lambda (i)
+;    (begin ((evaluate (format "test_cases/in~a.txt" i)) (display "EVAL COMPLETED!"))))
+;          '(4 5 7 12 13 14 44 45 77 122))
+         
+(for-each (lambda (i)
+            (begin
+              (displayln (format "test_cases/in~a.txt" i))
+              (evaluate (format "test_cases/in~a.txt" i))
+              ))
+            '(4 5 7 12 44 77 122)
+            )
