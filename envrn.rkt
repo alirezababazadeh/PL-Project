@@ -1,4 +1,4 @@
-#lang racket
+#lang debug racket
 
 (require eopl)
 (provide (all-defined-out))

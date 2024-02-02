@@ -101,13 +101,13 @@
     (cases function-def func-def
       (func-def-with-params
        (identifier params stats)
-       (let ((f (a-func identifier params stats (lc-sc-new sc))))
+       (let ((f (a-func identifier params stats (cp-of-sc sc))))
          (a-ans (none-stmt) '- (extend-sc sc identifier f))))
          
        
       (func-def-no-params 
        (identifier stats)
-       (let ((f (a-func identifier (none-stmt) stats (lc-sc-new sc))))
+       (let ((f (a-func identifier (none-stmt) stats (cp-of-sc sc))))
          (a-ans (none-stmt) '- (extend-sc sc identifier f)))))))
          
 
@@ -470,4 +470,10 @@
       (#t (a-ans atom '- scope)))))
 
 
-(evaluate "test.py")
+(for-each (lambda (i)
+            (begin
+              (displayln (format "test_cases/in~a.txt" i))
+              (evaluate (format "test_cases/in~a.txt" i))
+              ))
+         '(1 2 3 4 5 6 7 8 9 10 11 12 13)
+         )
