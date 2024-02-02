@@ -173,8 +173,12 @@
 
 (define value-of-expression
  (lambda (exp scope)
-  (cases expression exp
-   (disjunct-expression (disjunc) (value-of-disjunction disjunc scope)))))
+  (cond 
+    [(expression? exp)
+     (cases expression exp
+       (disjunct-expression (disjunc) (value-of-disjunction disjunc scope)))]
+   [else (a-ans exp '- scope)])
+))
 
 
 
@@ -268,10 +272,37 @@
                      (cond
                        ((evaluated-list? exp1)
                         (cases evaluated-list exp1
-                          (a-evaluated-list (py-list1 sc1)
-                                        (cases evaluated-list exp2
-                                          (a-evaluated-list (py-list2 sc2)
-                                                           (a-ans (a-evaluated-list (append (python-list->list-value py-list1) (python-list->list-value py-list2)) scope) '- scope))))))
+                          (a-evaluated-list 
+                           (py-list1 sc1)
+                           (cases evaluated-list exp2
+                             (a-evaluated-list
+                              (py-list2 sc2)
+                              (a-ans 
+                               (a-evaluated-list
+                                (append
+                                 (map
+                                  (lambda (expr) 
+                                    (cond 
+                                      [(expression? expr) (ans-val (value-of-expression expr sc1))]
+                                      [else expr]
+                                       ))
+                                  (python-list->list-value py-list1)
+                                  )
+                                 (map
+                                  (lambda (expr)
+                                    (cond
+                                      [(expression? expr) (ans-val (value-of-expression expr sc2))]
+                                      [else expr]
+                                      ))
+                                  (python-list->list-value py-list2)
+                                  )
+                                 )
+                                scope) '- scope)
+                              )
+                             )
+                           )
+                          )
+                        )
                        (else (a-ans (+ exp1 exp2) '- scope)))))))
       (minus-sum (sum term)
                (let ((ans1 (value-of-sum sum scope)))
@@ -391,7 +422,10 @@
           (let 
               ((result-lst
                 (map
-                 (lambda (expr) (repr (ans-val (value-of-expression expr sc))))
+                 (lambda (expr) (cond
+                                  [(expression? expr) (repr (ans-val (value-of-expression expr sc)))]
+                                  [else expr]
+                                  ))
                  (python-list->list-value python-list)
                  )))
             (format "[~a]" (string-join (map number->string result-lst) ", ")))
@@ -475,5 +509,5 @@
               (displayln (format "test_cases/in~a.txt" i))
               (evaluate (format "test_cases/in~a.txt" i))
               ))
-         '(1 2 3 4 5 6 7 8 9 10 11 12 13)
+         '(13)
          )
