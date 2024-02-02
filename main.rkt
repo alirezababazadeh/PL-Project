@@ -166,11 +166,11 @@
        (a-ans (none-stmt) '- sc)
        (let* ((resp1 (value-of-expression (car lst) stored-sc))
               (resp2 (value-of-stats stats (extend-sc sc iter (ans-val resp1)))))
-         (if (break-ans? resp2)
-            (a-ans (none-stmt) '- (extract-sc resp2))
-            (value-of-for-body iter (cdr lst) stored-sc stats (extract-sc resp2)))))))
-  
-       
+         (cond
+           [(break-ans? resp2) (a-ans (none-stmt) '- (extract-sc resp2))]
+           [(ret-ans? resp2) resp2]
+           [else (value-of-for-body iter (cdr lst) stored-sc stats (extract-sc resp2))])))))
+
 (define value-of-expression
  (lambda (exp scope)
   (cases expression exp
