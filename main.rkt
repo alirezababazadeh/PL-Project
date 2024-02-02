@@ -439,7 +439,11 @@
                                   ))
                  (python-list->list-value python-list)
                  )))
-            (format "[~a]" (string-join (map number->string result-lst) ", ")))
+            (format "[~a]" (string-join 
+                            (map (lambda (x) (cond 
+                            [(number? x) (number->string x)]
+                            [else (repr x)]
+                            )) result-lst) ", ")))
           )
          )]
       [(boolean? val) (if val 'True 'False)]
@@ -517,8 +521,8 @@
 
 (for-each (lambda (i)
             (begin
-              (displayln (format "test_cases/in~a.txt" i))
-              (evaluate (format "test_cases/in~a.txt" i))
+              (displayln (format "test_cases/original/in~a.txt" i))
+              (evaluate (format "test_cases/original/in~a.txt" i))
               ))
-         '(0)
+         '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15)
          )
