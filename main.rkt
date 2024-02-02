@@ -136,17 +136,32 @@
        (else-stats)
        (value-of-stats else-stats sc)))))
       
+
+(define thunk->list-values
+ (lambda (exps sc)
+  (cases expressions exps
+   (cum-expression (exprs expr) (append (thunk->list-values exprs sc) (list (a-thunk expr sc))))
+   (a-expression (expr) (list (a-thunk expr sc))))))
+ 
+(define python-list->list-val
+ (lambda (py-lst sc)
+  (if (list? py-lst)
+      py-lst
+      (cases python-list py-lst
+        (filled-list (exprs) (thunk->list-values exprs sc))
+        (empty-list () '())))))
+  
 (define python-list->list-value
   (lambda (py-lst)
     (if (list? py-lst)
        py-lst
        (cases python-list py-lst
          (filled-list (exprs) (expressions->list-val exprs))
-         (empty-list () '())
-         )
-       )
-    )
-  )
+         (empty-list () '())))))
+         
+       
+    
+  
 
 ; for stmt
 (define value-of-for-stmt
@@ -271,7 +286,8 @@
                           (a-evaluated-list (py-list1 sc1)
                                         (cases evaluated-list exp2
                                           (a-evaluated-list (py-list2 sc2)
-                                                           (a-ans (a-evaluated-list (append (python-list->list-value py-list1) (python-list->list-value py-list2)) scope) '- scope))))))
+                                                           (a-ans 
+                                                              (a-evaluated-list (append (python-list->list-val py-list1 sc1) (python-list->list-val py-list2 sc2)) scope) '- scope))))))
                        (else (a-ans (+ exp1 exp2) '- scope)))))))
       (minus-sum (sum term)
                (let ((ans1 (value-of-sum sum scope)))
@@ -334,12 +350,12 @@
 (define list-refrence 
  (lambda (lst-exps idx)
    (if (list? lst-exps) 
-   (list-ref lst-exps idx) 
-   (cases python-list lst-exps
-   (filled-list (exprs) (list-ref (expressions->list-val exprs) idx))
-   (empty-list () -1)))
-   )
-  )
+    (list-ref lst-exps idx) 
+    (cases python-list lst-exps
+     (filled-list (exprs) (list-ref (expressions->list-val exprs) idx))
+     (empty-list () -1)))))
+   
+  
 
 (define value-of-primary
   (lambda (ex scope)
@@ -391,17 +407,19 @@
           (let 
               ((result-lst
                 (map
-                 (lambda (expr) (repr (ans-val (value-of-expression expr sc))))
-                 (python-list->list-value python-list)
-                 )))
-            (format "[~a]" (string-join (map number->string result-lst) ", ")))
-          )
-         )]
+                 (lambda (thnk) (repr (ans-val (value-of-expression (extract-expr-thunk thnk) (extract-sc-thunk thnk)))))
+                 (python-list->list-value python-list))))
+                 
+            (cond
+             ((list? result-lst) result-lst)
+             (else (format "[~a]" (string-join (map number->string result-lst) ", ")))))))]
+          
+         
       [(boolean? val) (if val 'True 'False)]
       [(none? val) 'None]
-      [else val])
-    )
-  )
+      [else val])))
+    
+  
 
 (define value-of-print
   (lambda (args scope)
@@ -470,10 +488,5 @@
       (#t (a-ans atom '- scope)))))
 
 
-(for-each (lambda (i)
-            (begin
-              (displayln (format "test_cases/in~a.txt" i))
-              (evaluate (format "test_cases/in~a.txt" i))
-              ))
-         '(1 2 3 4 5 6 7 8 9 10 11 12 13)
-         )
+(evaluate "test.py")
+         

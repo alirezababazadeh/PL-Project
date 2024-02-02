@@ -45,6 +45,16 @@
    (exp expression?)
    (sc scope?)))
 
+(define extract-sc-thunk
+ (lambda (th)
+  (cases thunk th
+   (a-thunk (exp sc) sc))))
+   
+(define extract-expr-thunk
+ (lambda (th)
+  (cases thunk th
+   (a-thunk (exp sc) exp))))
+
 (define-datatype func func?
   (a-func
    (identifier symbol?)
