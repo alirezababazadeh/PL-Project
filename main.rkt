@@ -236,9 +236,20 @@
   (lambda (ex scope)
     (cases eq-sum ex
       (a-eq-sum (sum1 sum2)
-                (let ((ans1 (value-of-sum sum1 scope))
-                      (ans2 (value-of-sum sum2 scope)))
-                  (a-cmp-answer (= (ans-val ans1) (ans-val ans2)) (extract-sc ans2)))))))
+               (let ((ans1 (value-of-sum sum1 scope))
+                     (ans2 (value-of-sum sum2 scope)))
+                 (cond 
+                   [(and (number? (ans-val ans1)) (number? (ans-val ans2)))
+                    (a-cmp-answer (= (ans-val ans1) (ans-val ans2)) (extract-sc ans2))]
+                   [(and (evaluated-list? (ans-val ans1)) (evaluated-list? (ans-val ans1))) 
+                    (a-cmp-answer (equal? (repr (ans-val ans1)) (repr (ans-val ans2))) (extract-sc ans2))
+                   ]
+                    )
+                 )
+               )
+      )
+    )
+  )
 
 
 (define value-of-lt-sum
@@ -509,5 +520,5 @@
               (displayln (format "test_cases/in~a.txt" i))
               (evaluate (format "test_cases/in~a.txt" i))
               ))
-         '(13)
+         '(0)
          )
